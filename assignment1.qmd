@@ -1,0 +1,138 @@
+---
+title: "Assignment"
+author: "Susan Mumbi"
+format: docx
+editor: visual
+---
+
+# LOGISTIC REGRESSION
+
+## Introduction
+
+The data used was used investigate the determinants of contraceptive use among individuals in a certain population based on demographic, socioeconomic, and geographic variables, including residence type, education level, and wealth index.
+
+### Variables in the Data
+
+uses_contraceptive: This is the outcome variable and represents whether an individual uses contraception or not. It's a factor variable with levels 'yes' and 'no'.
+
+Residence: This variable represents the type of residence where the individual lives. It's a factor variable with levels 'rural' and 'urban', indicating whether the individual lives in a rural or urban area.
+
+Education_level: This variable represents the education level of the individual. It's a factor variable with levels such as 'no education', 'primary', 'secondary', and 'higher', indicating the highest level of education attained by the individual.
+
+Wealth_index: This variable represents the wealth index or economic status of the individual. It's a factor variable with levels such as 'poor', 'middle', and 'rich', indicating the economic status or wealth level of the individual.
+
+
+```{r, include=FALSE}
+library(tidyverse)
+library(gtsummary)
+library(pscl)
+library(pROC)
+library(equatiomatic)
+```
+
+## Loading and Preprocessing Data
+
+```{r}
+# Importin the data
+ contraceptive<-read.csv("contraceptive.csv")
+# converting variables to categorical variables
+contraceptive$uses_contraceptive<-factor(contraceptive$uses_contraceptive, levels = c(0,1), labels = c("no","yes"))
+contraceptive$Residence<-factor(contraceptive$Residence, levels = c(0,1), labels = c("rural","urban"))
+contraceptive$Education_level<- factor(contraceptive$Education_level, levels = c(0,1,2,3), labels = c("no_education","primary","secondary","higher"))
+contraceptive$Wealth_index <- factor(contraceptive$Wealth_index, levels = c(0,1,2), labels = c("poor","middle","rich"))
+
+
+```
+
+
+
+## Fitting Logistic Regression Model
+
+```{r}
+model <- glm(uses_contraceptive~.,data = contraceptive, family = "binomial")
+```
+
+
+
+Represent Results in LaTeX
+
+```{r}
+extract_eq(model)
+```
+
+## Interpret Coefficients
+```{r}
+tbl_regression(model,pvalue_fun = ~style_pvalue(.x, digits = 3)) %>% 
+  bold_p() %>% 
+  as_flex_table()
+```
+
+For individuals living in urban areas, the log of the Odds Ratio (log OR) is -0.19. This means that compared to individuals living in rural areas, those living in urban areas have lower odds (about exp(-0.19) ≈ 0.83 times) of using contraceptives.
+
+For individuals with primary education, the log OR is 0.46. This means that compared to individuals with no education, those with primary education have higher odds (about exp(0.46) ≈ 1.58 times) of using contraceptives.
+For individuals with secondary education, the log OR is 0.59. This suggests higher odds (about exp(0.59) ≈ 1.80 times) of contraceptive usage compared to those with no education.
+For individuals with higher education, the log OR is 0.75. This implies higher odds (about exp(0.75) ≈ 2.12 times) of contraceptive usage compared to those with no education.
+For individuals with middle wealth index, the log OR is 0.94. This means that compared to individuals in the poor wealth index category, those in the middle wealth index category have higher odds (about exp(0.94) ≈ 2.56 times) of using contraceptives.
+For individuals with rich wealth index, the log OR is 1.1. This implies higher odds (about exp(1.1) ≈ 3.00 times) of contraceptive usage compared to those in the poor wealth index category.
+
+## Goodness of fit of the Model using 
+```{r}
+
+roc_curve <- roc(model$y, fitted(model))
+
+# Calculate the AUC-ROC
+auc_roc <- auc(roc_curve)
+
+# Print AUC-ROC
+print(auc_roc)
+
+
+```
+> The higher the AUC the better. AUC value between 0.6 and 0.7 is considered as  fair goodness of fit. 
+
+# POISSON REGRESSION
+
+## Introduction
+CEB is children ever born byba single woman.
+Education_level is education level attained.
+birth_age is age at first birth
+## Loading the Data
+```{r}
+poisson <- read.csv("poison.csv", header = TRUE)
+poisson$Education_level <- factor(poisson$Education_level, levels = c(0,1,2,3),
+                                 labels = c("no education","primary","secondary","higher"))
+```
+## Fitting the Model
+```{r}
+p_m <- glm(CEB ~ ., data = poisson, family = "poisson")
+```
+
+## Represent the result in latext
+```{r}
+extract_eq(p_m)
+```
+
+## interpreting the coefficients
+```{r}
+tbl_regression(p_m,pvalue_fun = ~style_pvalue(.x, digits = 3)) %>% 
+  bold_p() %>% 
+  as_flex_table()
+```
+
+For individuals with primary education, the log of the Incidence Rate Ratio (log IRR) is -0.33. This means that compared to individuals with no education, those with primary education have a 1 - exp(-0.33) ≈ 28% lower expected number of children born.
+For individuals with secondary education, the log IRR is -0.64. This implies a 1 - exp(-0.64) ≈ 46% lower expected number of children born compared to those with no education.
+For individuals with higher education, the log IRR is -0.75. This suggests a 1 - exp(-0.75) ≈ 53% lower expected number of children born compared to those with no education.
+For every one-unit increase in birth age (age at first birth), the log IRR decreases by 0.03. This suggests that for each year older a woman is when she has her first child, the expected number of children born decreases by approximately exp(-0.03) ≈ 3%.
+
+
+## Goodness of fit
+
+```{r}
+# Calculate Nagelkerke's R-squared
+nagelkerke_r2 <- pR2(model)
+nagelkerke_r2
+
+```
+McFadden's Pseudo-R-squared (McFadden)
+Higher values of McFadden's Pseudo-R-squared (McFadden) indicate better model fit. In our case, McFadden's pseudo-R-squared is approximately 0.0568, indicating that the model explains about 5.68% of the variance in the data compared to the null model.
+
